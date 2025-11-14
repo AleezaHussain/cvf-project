@@ -1,5 +1,7 @@
 'use client';
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Toast from "@/components/Toast";
 
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
@@ -49,12 +51,16 @@ export default function AuthPage() {
 /* ------------------------------------------------ */
 function LoginForm() {
   const [form, setForm] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const response = await fetch("/api/login", {
         method: "POST",
@@ -69,26 +75,43 @@ function LoginForm() {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Login successful!");
         console.log("Login response:", data);
+        setToast({ type: "success", message: "Login successful. Redirecting..." });
+        const role = data?.data?.role;
+        if (role === "government") {
+          router.push("/government-dashboard");
+        } else {
+          router.push("/user-dashboard");
+        }
       } else {
-        alert(`Login failed: ${data.error}`);
         console.error("Login error:", data);
+        setToast({ type: "error", message: data?.error || "Login failed" });
+        setLoading(false);
       }
     } catch (error) {
       console.error("Error during login:", error);
+      setToast({ type: "error", message: "Unexpected error during login" });
+      setLoading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
 
       <input
         type="email"
         name="email"
         placeholder="Email"
         onChange={handleChange}
-        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+        disabled={loading}
+        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-black"
       />
 
       <input
@@ -96,14 +119,19 @@ function LoginForm() {
         name="password"
         placeholder="Password"
         onChange={handleChange}
-        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+        disabled={loading}
+        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-black"
       />
 
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+        className={`w-full bg-blue-600 text-white py-2 rounded-lg font-semibold transition ${
+          loading ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"
+        }`}
+        disabled={loading}
+        aria-busy={loading}
       >
-        Login
+        {loading ? "Logging in..." : "Login"}
       </button>
 
     </form>
@@ -119,12 +147,15 @@ function SignupForm() {
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const response = await fetch("/api/login", {
         method: "POST",
@@ -139,19 +170,28 @@ function SignupForm() {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Signup successful!");
         console.log("Signup response:", data);
+        setToast({ type: "success", message: "Signup successful" });
       } else {
-        alert(`Signup failed: ${data.error}`);
         console.error("Signup error:", data);
+        setToast({ type: "error", message: data?.error || "Signup failed" });
       }
     } catch (error) {
       console.error("Error during signup:", error);
+      setToast({ type: "error", message: "Unexpected error during signup" });
     }
+    setLoading(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {toast && (
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+        />
+      )}
 
       {/* FULL NAME FIELD (Signup Only) */}
       <input
@@ -159,7 +199,8 @@ function SignupForm() {
         name="full_name"
         placeholder="Full Name"
         onChange={handleChange}
-        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+        disabled={loading}
+        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-black"
       />
 
       <input
@@ -167,7 +208,8 @@ function SignupForm() {
         name="email"
         placeholder="Email"
         onChange={handleChange}
-        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+        disabled={loading}
+        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-black"
       />
 
       <input
@@ -175,14 +217,19 @@ function SignupForm() {
         name="password"
         placeholder="Password"
         onChange={handleChange}
-        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+        disabled={loading}
+        className="w-full border border-blue-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 text-black"
       />
 
       <button
         type="submit"
-        className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+        className={`w-full bg-blue-600 text-white py-2 rounded-lg font-semibold transition ${
+          loading ? "opacity-70 cursor-not-allowed" : "hover:bg-blue-700"
+        }`}
+        disabled={loading}
+        aria-busy={loading}
       >
-        Sign Up
+        {loading ? "Signing up..." : "Sign Up"}
       </button>
     </form>
   );
